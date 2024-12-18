@@ -1,0 +1,353 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>JS Performance Benchmark</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" rel="stylesheet">
+
+    <style>
+        *, *::before, *::after {
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background: #1e1e1e;
+            color: #fff;
+            margin: 0;                
+            height: 100%; 
+        }
+
+        .container {
+            margin: 0 auto;
+            height: 100vh;
+            display: flex;
+            gap: 32px;            
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                flex-direction: column;
+            }
+        }
+
+        .content {
+            flex: 2;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            padding: 2rem;
+            gap: 16px;
+        }
+
+        h2 {
+            font-size: 16px;
+            opacity: .5;
+            font-weight: 500;
+            margin: 0;
+            padding: 0;
+        }
+
+        .code {
+            background: #141414;
+            border-radius: 6px;
+            border: 0;
+            color: #d4d4d4;
+            font-family: monospace;
+            font-size: 12px;
+            padding: 8px;
+            resize: none;
+            width: 100%;
+            field-sizing: content;
+            outline: none;
+        }
+
+        .test-cases {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .test-case {
+            background: #2a2a2a;
+            border-radius: 6px;
+            display: flex;
+            flex-direction: column;            
+
+            header {
+                display: flex;
+                justify-content: space-between;
+                font-size: 12px;
+                padding: 8px;
+                align-items: center;
+
+                .test-id {
+                    border-radius: 100%;
+                    background: #141414;
+                    width: 20px;
+                    height: 20px;
+                    display: flex;
+                    justify-content: center;
+                    align-items: center;
+                    text-align: center;
+                    color: rgba(255, 255, 255, .7);
+                }
+
+                .ops {
+                    opacity: .5;
+                    font-size: 10px;
+                }
+            }
+
+            .code {
+                border-radius: 0 0 6px 6px;
+            }
+        }
+
+        button {
+            border-radius: 6px;
+            background: transparent;
+            border: 2px lightblue solid;
+            cursor: pointer;
+            padding: 6px 12px;
+            color: lightblue;
+            font-weight: bold;
+            transition: transform 0.3s ease;
+            width: fit-content;
+            &:hover {
+                transform: scale(1.1);
+            }
+        }
+
+        .fa-solid {
+            margin-left: 4px;
+        }
+
+        .chart-container {
+            flex: 1;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            padding: 2rem;
+            gap: 16px;
+            background: #191919;
+            
+            .chart {
+                width: 200px;
+                height: 320px;
+            }
+
+            .bar {
+                transition: height .5s ease;
+                transform: scale(1, -1);
+            }
+
+            .bar-group text {
+                font-size: 11px;
+                fill: lightgrey;
+                dominant-baseline: hanging;
+            }
+
+        }
+
+        .globals-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+    </style>
+
+    <script type="module">
+
+        //const addTestCaseButton = document.querySelector('#add-test-case');
+        const testCasesContainer = document.querySelector('.test-cases');
+        const chart = document.querySelector('.chart');
+        const percentagesContainer = document.querySelector('.percentages');
+        let testCaseCount = document.querySelectorAll('.test-case').length;
+
+        /*addTestCaseButton.addEventListener('click', () => {
+            testCaseCount++;
+
+            const testCaseHTML = `
+                <article class="test-case">
+                    <header>
+                        <span class="test-id">${testCaseCount}</span>
+                        <span class="ops"></span>
+                    </header>
+                    <textarea spellcheck="false" class="code" rows="1"></textarea>
+                </article>
+            `;
+            testCasesContainer.insertAdjacentHTML('beforeend', testCaseHTML);
+
+            // Añadir nueva barra al gráfico
+            const newBar = document.createElementNS("http://www.w3.org/2000/svg", "rect");
+            newBar.classList.add("bar");
+            newBar.setAttribute("x", 20 + testCaseCount * 50);
+            newBar.setAttribute("y", "-300");
+            newBar.setAttribute("width", "2");
+            newBar.setAttribute("height", "300");
+            newBar.setAttribute("fill", "none");
+            chart.appendChild(newBar);
+
+            // Añadir nuevo porcentaje debajo de la barra
+            const newPercentage = document.createElement("span");
+            newPercentage.classList.add("percentage");
+            newPercentage.textContent = "";
+            percentagesContainer.appendChild(newPercentage);
+        });*/
+        
+        const $globalCode = document.querySelector('#global');
+        const $sendButton = document.querySelector('#send-cases');
+
+        const COLORS = ['green', 'yellow', 'orange', 'red', 'purple', 'blue', 'pink', 'gray', 'black', 'white'];
+
+        async function runTest ({ code, data }) {
+            const worker = new Worker('./worker.js');
+            worker.postMessage({ code, data, duration: 1000 });
+
+            return new Promise(resolve => {
+                worker.onmessage = event => {
+                    resolve(event.data);
+                }
+            })
+        }
+
+        async function runTestCases () {
+            const $testCases = document.querySelectorAll('.test-case');
+            const $bars = document.querySelectorAll('.bar');
+            const $percentages = document.querySelectorAll('.percentage');
+            const globalCode = $globalCode.value;
+
+            $bars.forEach(bar => bar.setAttribute('height', 0))      
+            $percentages.forEach(percentage => percentage.textContent = "")
+
+            const promises = Array.from($testCases).map(async (testCase, index) => {
+                const $code = testCase.querySelector('.code');
+                const $ops = testCase.querySelector('.ops');
+
+                const codeValue = $code.value;
+                $ops.textContent = "Loading...";
+
+                const result = await runTest({ code: codeValue, data: globalCode });
+
+                $ops.textContent = `${result.toLocaleString()} ops/s`
+
+                return result;
+            })
+
+            const results = await Promise.all(promises);
+            const maxOps = Math.max(...results);
+
+            const sortedResults = results
+                .map((result, index) => ({ result, index }))
+                .sort((a, b) => b.result - a.result);
+
+            results.forEach((result, index) => {
+                const bar = $bars[index]
+                const percentage = $percentages[index]
+
+                const indexColor = sortedResults.findIndex(x => x.index === index);
+                const color = COLORS[indexColor];
+                bar.setAttribute('fill', color);
+
+                const height = result / maxOps * 300;
+                bar.setAttribute('height', height);
+
+                const percentageValue = Math.round(result / maxOps * 100);
+                percentage.textContent = `${percentageValue}%`;
+            })
+
+        }
+
+        runTestCases();
+
+        $sendButton.addEventListener('click', () => runTestCases());
+
+
+    </script>
+
+</head>
+
+<body>
+    <main class="container">
+        <div class="content">
+            <div class="globals-header">
+                <h2>Global</h2>
+                <button id="send-cases">
+                    Run tests
+                    <i class="fa-solid fa-arrows-rotate"></i>
+                </button>
+            </div>
+            
+            <textarea spellcheck="false" id="global" class="code" rows="1">const data = [...Array(1000).keys()]</textarea>
+            
+            <div class="globals-header">
+                <h2>Test cases</h2>
+                <!--<button id="add-test-case">
+                    Add case
+                    <i class="fa-solid fa-plus"></i>
+                </button>-->
+            </div>
+            
+            
+            <div class="test-cases">
+                <article class="test-case">
+                    <header>
+                        <span class="test-id">1</span>
+                        <span class="ops"></span>
+                    </header>
+                    <textarea spellcheck="false" class="code" rows="1">data.find(x => x === 100)</textarea>
+                </article>
+                <article class="test-case">
+                    <header>
+                        <span class="test-id">2</span>
+                        <span class="ops"></span>
+                    </header>
+                    <textarea spellcheck="false" class="code" rows="1">data.find(x => x === 200)</textarea>
+                </article>
+                <article class="test-case">
+                    <header>
+                        <span class="test-id">3</span>
+                        <span class="ops"></span>
+                    </header>
+                    <textarea spellcheck="false" class="code" rows="1">data.find(x => x === 400)</textarea>
+                </article>
+                <article class="test-case">
+                    <header>
+                        <span class="test-id">4</span>
+                        <span class="ops"></span>
+                    </header>
+                    <textarea spellcheck="false" class="code" rows="1">data.find(x => x === 800)</textarea>
+                </article>
+            </div>
+
+            
+        </div>
+
+        <div class="chart-container">
+            <h2>Results</h2>
+            <svg class="chart" viewBox="0 0 200 320">
+                <g class="bar-group">
+                    <rect class="bar" x="20" y="-300" width="5" height="300" fill="none"></rect>
+                    <text class="percentage" x="30" y="310" text-anchor="middle"></text>
+                </g>
+                <g class="bar-group">
+                    <rect class="bar" x="70" y="-300" width="5" height="100" fill="none"></rect>
+                    <text class="percentage" x="80" y="310" text-anchor="middle"></text>
+                </g>
+                <g class="bar-group">
+                    <rect class="bar" x="120" y="-300" width="5" height="100" fill="none"></rect>
+                    <text class="percentage" x="130" y="310" text-anchor="middle"></text>
+                </g>
+                <g class="bar-group">
+                    <rect class="bar" x="170" y="-300" width="5" height="100" fill="none"></rect>
+                    <text class="percentage" x="180" y="310" text-anchor="middle"></text>
+                </g>
+            </svg>
+        </div>
+        
+    </main>
+</body>
+
+</html>
