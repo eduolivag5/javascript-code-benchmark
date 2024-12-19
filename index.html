@@ -3,7 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>JS Performance Benchmark</title>
+    <title>JS Performance</title>
+    <link rel="icon" href="logo.png" type="image/x-icon">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" rel="stylesheet">
     
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -26,7 +27,7 @@
 
         .container {
             margin: 0 auto;
-            min-height: 100vh;
+            height: 100vh;
             display: flex;
             gap: 32px;
         }
@@ -43,6 +44,13 @@
             flex-direction: column;
             padding: 2rem;
             gap: 16px;
+            overflow-y: auto;          
+        }
+
+        @media (max-width: 768px) {
+            .content {
+                overflow-y: visible;
+            }
         }
 
         h2 {
@@ -60,6 +68,7 @@
             color: #d4d4d4;
             font-family: monospace;
             font-size: 12px;
+            min-height: 40px;
             padding: 8px;
             resize: none;
             width: 100%;
@@ -137,16 +146,17 @@
             padding: 2rem;
             gap: 16px;
             background: #191919;
+            align-items: center;
             
             .chart {
                 width: 80%;
             }
 
             @media (max-width: 768px) {
-            .chart {
-                width: 100%;
+                .chart {
+                    width: 100%;
+                }
             }
-        }
 
             .bar {
                 transition: height .5s ease;
@@ -154,7 +164,8 @@
             }
 
             .bar-group text {
-                font-size: 11px;
+                font-size: 10px;
+                font-weight: 300;
                 fill: lightgrey;
                 dominant-baseline: hanging;
             }
@@ -343,27 +354,40 @@
         </div>
 
         <div class="chart-container" id="results">
-            <h2>Results</h2>
-            <svg class="chart" viewBox="0 0 260 320">
+            <div class="globals-header">
+                <h2>Results</h2>
+            </div>
+            
+            <svg class="chart" viewBox="0 0 260 400">
                 <g class="bar-group">
                     <rect class="bar" x="20" y="-300" width="5" height="300" fill="none"></rect>
-                    <text class="percentage" x="30" y="310" text-anchor="middle"></text>
+                    <circle cx="25" cy="320" r="10" fill="#333"></circle>
+                    <text x="25" y="315" fill="white" text-anchor="middle">1</text>
+                    <text class="percentage" x="25" y="340" text-anchor="middle"></text>                    
                 </g>
                 <g class="bar-group">
                     <rect class="bar" x="70" y="-300" width="5" height="100" fill="none"></rect>
-                    <text class="percentage" x="80" y="310" text-anchor="middle"></text>
+                    <circle cx="75" cy="320" r="10" fill="#333"></circle>
+                    <text x="75" y="315" fill="white" text-anchor="middle">2</text>
+                    <text class="percentage" x="75" y="340" text-anchor="middle"></text>
                 </g>
                 <g class="bar-group">
                     <rect class="bar" x="120" y="-300" width="5" height="100" fill="none"></rect>
-                    <text class="percentage" x="130" y="310" text-anchor="middle"></text>
+                    <circle cx="125" cy="320" r="10" fill="#333"></circle>
+                    <text x="125" y="315" fill="white" text-anchor="middle">3</text>
+                    <text class="percentage" x="125" y="340" text-anchor="middle"></text>
                 </g>
                 <g class="bar-group">
                     <rect class="bar" x="170" y="-300" width="5" height="100" fill="none"></rect>
-                    <text class="percentage" x="180" y="310" text-anchor="middle"></text>
+                    <circle cx="175" cy="320" r="10" fill="#333"></circle>
+                    <text x="175" y="315" fill="white" text-anchor="middle">4</text>
+                    <text class="percentage" x="175" y="340" text-anchor="middle"></text>
                 </g>
                 <g class="bar-group">
                     <rect class="bar" x="220" y="-300" width="5" height="100" fill="none"></rect>
-                    <text class="percentage" x="230" y="310" text-anchor="middle"></text>
+                    <circle cx="225" cy="320" r="10" fill="#333"></circle>
+                    <text x="225" y="315" fill="white" text-anchor="middle">5</text>
+                    <text class="percentage" x="225" y="340" text-anchor="middle"></text>
                 </g>
             </svg>
         </div>
